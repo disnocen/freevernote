@@ -8,6 +8,7 @@ It creates new markdown file, one for each new note.
 - create new notes with `fvn new`
 - search notes with `fvn search <regexp>` (based on `grep`) 
 - count notes with `fvn count`
+- it is possible to create a simple web page in order to write from another device, e.g. a smartphone. See directory `mobile`
 
 ## TODO
 

@@ -5,7 +5,7 @@ SEARCH=grep
 INDEX=.index.csv
 after=3
 before=0
-directory=$HOME/journal
+directory=$HOME/owncloud/journal
 mkdir -p $directory # creates a directory; -p flag
 # grep ^5, .index.csv|cut -d, -f2 
 
