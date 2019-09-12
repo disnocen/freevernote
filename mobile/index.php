@@ -7,7 +7,7 @@
 
 Enter your note below:<br>
 
-<form action="/send.php" method="post"> 
+<form action="./send.php" method="post"> 
 <textarea name="note" rows="4" cols="50">
 ## Title:
 
