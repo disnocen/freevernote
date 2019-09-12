@@ -64,7 +64,11 @@ function searchTitle {
         echo "insert the number of the note you want to read"  
         read num
         row=$(less $directory/.listed|grep ^$num,)
-        echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs readlink -f |xargs $EDITOR
+        if [[ $(echo $OSTYPE|grep darwin) ]];then  
+            echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs greadlink -f |xargs $EDITOR
+        else
+            echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs readlink -f |xargs $EDITOR
+        fi
     else
         echo "Specify an expression"  
     fi
