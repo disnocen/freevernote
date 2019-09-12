@@ -3,11 +3,14 @@
 EDITOR=nvim
 SEARCH=grep
 INDEX=.index.csv
+
+# how many lines to show in the grep command?
 after=3
 before=0
+
+# directory where to save your journal
 directory=$HOME/owncloud/journal
 mkdir -p $directory # creates a directory; -p flag
-# grep ^5, .index.csv|cut -d, -f2 
 
 function help {
     echo -e "Usage: fvn <command>, where command in:"  
@@ -17,6 +20,8 @@ function help {
     echo -e "\tsearch: search for a note to modify"  
 }
 
+# builds the index; useful for searching
+# it does this thing each time it is called
 function build {
     i=1 
     echo "index,filename" > $directory/$INDEX
@@ -26,10 +31,11 @@ function build {
     done
 } 
 
+# it creates new note
 function new {
    file_name=$(date +%y%m%d_%H%M).md #example 190721_2114.md
    if [[ -f $directory/$file_name ]]; then
-       echo "File exists, please wait a minute at leasst!"  
+       echo "File exists, please wait a minute at least!"  
    else
        touch $directory/$file_name
        echo "## $(date)" > $directory/$file_name
@@ -40,7 +46,31 @@ function new {
    fi
 }
 
-function search {
+# function used to search
+function searchTitle {
+    rm $directory/.search_list $directory/.listed
+    echo "il valore da cercare è " $1
+    if [[ "$1" ]]; then
+        #$SEARCH -i --color=auto  -A$after -B$before "$1" $directory/*
+        $SEARCH -i --color=auto  "##" $directory/*| $SEARCH -i --color=auto "$1">$directory/.search_list; 
+        #$SEARCH -i --color=auto  "$1" $directory/* >$directory/.search_list; 
+        sed -i -e"s/^/\"/" -e "s/$/\"/" $directory/.search_list
+        
+        for i in $(seq 1 $(less $directory/.search_list|wc -l)); do
+            echo $i,$(cat $directory/.search_list |head -n$i|tail -n1)>>$directory/.listed;
+        done
+        
+        cat $directory/.listed
+        echo "insert the number of the note you want to read"  
+        read num
+        row=$(less $directory/.listed|grep ^$num,)
+        echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs readlink -f |xargs $EDITOR
+    else
+        echo "Specify an expression"  
+    fi
+} 
+
+function searchText {
     rm $directory/.search_list $directory/.listed
     if [[ "$1" ]]; then
         #$SEARCH -i --color=auto  -A$after -B$before "$1" $directory/*
@@ -70,13 +100,13 @@ if [[ $TERM == "linux" ]]; then
     zenity --info --text="use a terminal"  
 else
     case $1 in
-        new)
+        new|-n)
             $1 $2 $3 $4 $5 $6
             ;;
-        search)
-            $1 $2
+        search|-s)
+            searchTitle $2
             ;;
-        count|build)
+        count|build|-c)
             $1
             ;;
         help|--help|-h)
