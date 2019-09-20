@@ -1,4 +1,4 @@
-<?
+<?php
 
 date_default_timezone_set('Europe/Rome');
 $file_path_str = date('Ymd_Hi') . '.md';
