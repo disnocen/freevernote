@@ -38,7 +38,7 @@ function new {
        echo "File exists, please wait a minute at least!"  
    else
        touch $directory/$file_name
-       echo "## $(date)" > $directory/$file_name
+       echo "# $(date)" > $directory/$file_name
        echo >> $directory/$file_name
        echo "tag:: " $1 $2 $3 $4 $5 >> $directory/$file_name
        echo >> $directory/$file_name
@@ -52,7 +52,7 @@ function searchTitle {
     echo "il valore da cercare è " $1
     if [[ "$1" ]]; then
         #$SEARCH -i --color=auto  -A$after -B$before "$1" $directory/*
-        $SEARCH -i --color=auto  "##" $directory/*| $SEARCH -i --color=auto "$1">$directory/.search_list; 
+        $SEARCH -i --color=auto  "# " $directory/*| $SEARCH -i --color=auto "$1">$directory/.search_list; 
         #$SEARCH -i --color=auto  "$1" $directory/* >$directory/.search_list; 
         sed -i -e"s/^/\"/" -e "s/$/\"/" $directory/.search_list
         
@@ -65,10 +65,32 @@ function searchTitle {
         read num
         row=$(less $directory/.listed|grep ^$num,)
         if [[ $(echo $OSTYPE|grep darwin) ]];then  
-            echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs greadlink -f |xargs $EDITOR
+            file=$(echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs greadlink -f) 
         else
-            echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs readlink -f |xargs $EDITOR
+            file=$(echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs readlink -f) 
         fi
+        
+        echo "what do you wnat to do with that file?[P]rint, [E]xport or [O]pen?"    
+        read answer
+
+        case $answer in
+            e)
+                echo "exporting file to PDF"  
+                $HOME/bin/pandocToPdf.sh $file
+                ;;
+            o)
+                $EDITOR $file
+                ;;
+            p)
+                echo "the file is:"  
+                echo $file
+                echo "copied to clipboard"  
+                echo $file |xclip -selection clipboard
+                ;;
+            *)
+                echo "your option $answer makes no sense...."  
+                ;;
+        esac
     else
         echo "Specify an expression"  
     fi
