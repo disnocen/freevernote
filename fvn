@@ -1,5 +1,9 @@
 #! /bin/bash
 
+#
+# Definitions
+#
+
 EDITOR=nvim
 SEARCH=grep
 INDEX=.index.csv
@@ -12,6 +16,9 @@ before=0
 directory=$HOME/owncloud/journal
 mkdir -p $directory # creates a directory; -p flag
 
+#
+# Functions
+#
 function help {
     echo -e "Usage: fvn <command>, where command in:"  
     echo -e "\tnew tag1 tag2 tag3 tag4 tag5 : create new note and places (optional) tags"   
@@ -38,10 +45,15 @@ function new {
        echo "File exists, please wait a minute at least!"  
    else
        touch $directory/$file_name
-       echo "# $(date)" > $directory/$file_name
+       echo "# (<>)" > $directory/$file_name
        echo >> $directory/$file_name
-       echo "tag:: " $1 $2 $3 $4 $5 >> $directory/$file_name
+       echo "tag:: " $1 $2 $3 $4 $5 "(<>)">> $directory/$file_name
        echo >> $directory/$file_name
+       echo "(<>)">> $directory/$file_name
+       echo >> $directory/$file_name
+       echo >> $directory/$file_name
+       echo >> $directory/$file_name
+       echo "*Created on " $(date +%Y-%m-%d)"*">> $directory/$file_name
        $EDITOR $directory/$file_name
    fi
 }
@@ -122,6 +134,9 @@ function count {
     echo $(ls $directory|wc -l)   
 } 
 
+#
+# Main
+#
 if [[ $TERM == "linux" ]]; then
     zenity --info --text="use a terminal"  
 else
