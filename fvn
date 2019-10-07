@@ -144,6 +144,9 @@ else
         new|-n)
             $1 $2 $3 $4 $5 $6
             ;;
+        searchAll|-S)
+            searchText $2
+            ;;
         search|-s)
             searchTitle $2
             ;;
