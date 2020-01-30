@@ -3,7 +3,6 @@
 #
 # Definitions
 #
-
 EDITOR=nvim
 SEARCH=grep
 INDEX=.index.csv
@@ -12,13 +11,21 @@ INDEX=.index.csv
 after=3
 before=0
 
-# directory where to save your journal
-directory=$HOME/owncloud/journal
-mkdir -p $directory # creates a directory; -p flag
+# defaults
+def_directory=$HOME/owncloud/journal
+def_notebook=misc
+
+# create the directory if it does not exists already
+mkdir -p $def_directory # creates a directory; -p flag
 
 #
 # Functions
 #
+function listNotebooks {
+    find $def_directory -type d|grep -o "[A-Za-z0-9].*[A-Za-z0-9]"
+    echo $(find . -type d|grep -o "[A-Za-z0-9].*[A-Za-z0-9]")
+}
+
 function help {
     echo -e "Usage: fvn <command>, where command in:"  
     echo -e "\tnew tag1 tag2 tag3 tag4 tag5 : create new note and places (optional) tags"   
@@ -31,9 +38,9 @@ function help {
 # it does this thing each time it is called
 function build {
     i=1 
-    echo "index,filename" > $directory/$INDEX
-    for j in $directory/*; do 
-	echo $i','$j>>$directory/$INDEX; 
+    echo "index,filename" > $def_directory/$INDEX
+    for j in $def_directory/*; do 
+	echo $i','$j>>$def_directory/$INDEX; 
 	i=$(expr $i + 1);
     done
 } 
@@ -41,48 +48,57 @@ function build {
 # it creates new note
 function new {
    file_name=$(date +%y%m%d_%H%M).md #example 190721_2114.md
-   if [[ -f $directory/$file_name ]]; then
+   if [[ $1  && -d $def_directory/$1 ]];then
+       notebook=$1
+   else
+       notebook=$def_notebook
+   fi
+   if [[ -f $def_directory/$def_notebook/$file_name ]]; then
        echo "File exists, please wait a minute at least!"  
    else
-       touch $directory/$file_name
-       echo "# (<>)" > $directory/$file_name
-       echo >> $directory/$file_name
-       echo "tag:: " $1 $2 $3 $4 $5 "(<>)">> $directory/$file_name
-       echo >> $directory/$file_name
-       echo "(<>)">> $directory/$file_name
-       echo >> $directory/$file_name
-       echo >> $directory/$file_name
-       echo >> $directory/$file_name
-       echo "*Created on " $(date +%Y-%m-%d)"*">> $directory/$file_name
-       $EDITOR $directory/$file_name
+       touch $def_directory/$notebook/$file_name
+       echo "# (<>)" > $def_directory/$notebook/$file_name
+       echo >> $def_directory/$notebook/$file_name
+       #echo "tags:: (<>)">> $def_directory/$notebook/$file_name
+       echo >> $def_directory/$notebook/$file_name
+       echo "(<>)">> $def_directory/$notebook/$file_name
+       echo >> $def_directory/$notebook/$file_name
+       echo >> $def_directory/$notebook/$file_name
+       echo >> $def_directory/$notebook/$file_name
+       echo "*Created on " $(date +%Y-%m-%d)"*">> $def_directory/$notebook/$file_name
+       $EDITOR $def_directory/$notebook/$file_name
    fi
 }
 
 # function used to search
 function searchTitle {
-    rm $directory/.search_list $directory/.listed
+    rm $def_directory/.search_list $def_directory/.listed
     echo "il valore da cercare è " $1
     if [[ "$1" ]]; then
-        #$SEARCH -i --color=auto  -A$after -B$before "$1" $directory/*
-        $SEARCH -i --color=auto  "# " $directory/*| $SEARCH -i --color=auto "$1">$directory/.search_list; 
-        #$SEARCH -i --color=auto  "$1" $directory/* >$directory/.search_list; 
-        sed -i -e"s/^/\"/" -e "s/$/\"/" $directory/.search_list
+        #$SEARCH -i --color=auto  -A$after -B$before "$1" $def_directory/*
+        if [[ "$2" ]]; then
+            $SEARCH -i --color=auto  "# " $def_directory/"$2"/*| $SEARCH -i --color=auto "$1">$def_directory/.search_list; 
+        else
+            $SEARCH -i --color=auto  "# " $def_directory/*/*| $SEARCH -i --color=auto "$1">$def_directory/.search_list; 
+        fi
+        #$SEARCH -i --color=auto  "$1" $def_directory/* >$def_directory/.search_list; 
+        sed -i -e"s/^/\"/" -e "s/$/\"/" $def_directory/.search_list
         
-        for i in $(seq 1 $(less $directory/.search_list|wc -l)); do
-            echo $i,$(cat $directory/.search_list |head -n$i|tail -n1)>>$directory/.listed;
+        for i in $(seq 1 $(less $def_directory/.search_list|wc -l)); do
+            echo $i,$(cat $def_directory/.search_list |head -n$i|tail -n1)>>$def_directory/.listed;
         done
         
-        cat $directory/.listed
+        cat $def_directory/.listed
         echo "insert the number of the note you want to read"  
         read num
-        row=$(less $directory/.listed|grep ^$num,)
+        row=$(less $def_directory/.listed|grep ^$num,)
         if [[ $(echo $OSTYPE|grep darwin) ]];then  
             file=$(echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs greadlink -f) 
         else
             file=$(echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs readlink -f) 
         fi
         
-        echo "what do you wnat to do with that file?[P]rint, [E]xport or [O]pen?"    
+        echo "what do you wnat to do with that file?[D]elete, [P]rint, [E]xport or [O]pen?"    
         read answer
 
         case $answer in
@@ -99,6 +115,16 @@ function searchTitle {
                 echo "copied to clipboard"  
                 echo $file |xclip -selection clipboard
                 ;;
+            d)
+                echo "You sure you want to DELETE this file[y|n]?"
+                read ans
+                if [[ $ans==y ]]; then
+                    echo "removing file..."
+                    rm $file
+                else
+                    echo "ok, the file is still there..."
+                fi
+                    ;;
             *)
                 echo "your option $answer makes no sense...."  
                 ;;
@@ -109,21 +135,21 @@ function searchTitle {
 } 
 
 function searchText {
-    rm $directory/.search_list $directory/.listed
+    rm $def_directory/.search_list $def_directory/.listed
     if [[ "$1" ]]; then
-        #$SEARCH -i --color=auto  -A$after -B$before "$1" $directory/*
-        $SEARCH -i --color=auto  -A$after -B$before "$1" $directory/* >$directory/.search_list; 
-        #$SEARCH -i --color=auto  "$1" $directory/* >$directory/.search_list; 
-        sed -i -e"s/^/\"/" -e "s/$/\"/" $directory/.search_list
+        #$SEARCH -i --color=auto  -A$after -B$before "$1" $def_directory/*
+        $SEARCH -i --color=auto  -A$after -B$before "$1" $def_directory/* >$def_directory/.search_list; 
+        #$SEARCH -i --color=auto  "$1" $def_directory/* >$def_directory/.search_list; 
+        sed -i -e"s/^/\"/" -e "s/$/\"/" $def_directory/.search_list
         
-        for i in $(seq 1 $(less $directory/.search_list|wc -l)); do
-            echo $i,$(cat $directory/.search_list |head -n$i|tail -n1)>>$directory/.listed;
+        for i in $(seq 1 $(less $def_directory/.search_list|wc -l)); do
+            echo $i,$(cat $def_directory/.search_list |head -n$i|tail -n1)>>$def_directory/.listed;
         done
         
-        cat $directory/.listed
+        cat $def_directory/.listed
         echo "insert the number of the note you want to read"  
         read num
-        row=$(less $directory/.listed|grep ^$num,)
+        row=$(less $def_directory/.listed|grep ^$num,)
         echo $row|cut -d, -f2|cut -d: -f1|sed s/\"//|xargs readlink -f |xargs $EDITOR
     else
         echo "Specify an expression"  
@@ -131,7 +157,7 @@ function searchText {
 } 
 
 function count {
-    echo $(ls $directory|wc -l)   
+    echo $(ls $def_directory|wc -l)   
 } 
 
 #
